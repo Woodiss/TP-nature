@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js - Exemple</title>
+
+    <!-- Import map CDN (versions fixées) -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js",
+                "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/",
+                "lil-gui": "https://cdn.jsdelivr.net/npm/lil-gui@0.21.0/dist/lil-gui.esm.min.js",
+                "stats.js": "https://cdn.jsdelivr.net/npm/stats.js@0.17.0/src/Stats.js",
+                "simplex-noise": "https://cdn.jsdelivr.net/npm/simplex-noise@4.0.3/+esm"
+            }
+        }
+    </script>
+
+    <style>
+        /* Enlever les marges par défaut du navigateur */
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            /* Empêcher les barres de défilement */
+        }
+
+        /* Le canvas prendra automatiquement toute la taille définie par le renderer */
+        canvas {
+            display: block;
+            /* Enlever l'espace blanc en bas du canvas */
+        }
+    </style>
+</head>
+
+<body>
+    <div id="ThreeJS" style="position: absolute; left:0px; top:0px"></div>
+    <script type="module" src="main.js"></script>
+</body>
+
+</html>
