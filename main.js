@@ -97,7 +97,7 @@ positions.needsUpdate = true;
 geometrySol.computeVertexNormals(); // Recalculer les normales pour l'éclairage
 
 // ==================== GRASS INSTANCING ====================
-const grassCount = 1000000;
+const grassCount = 400000;
 const dummy = new THREE.Object3D();
 const _position = new THREE.Vector3();
 const _normal = new THREE.Vector3();
