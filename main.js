@@ -58,7 +58,7 @@ const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight),
     0.15,  // strength
     0.5,  // radius
-    0.3   // threshold
+    0.8   // threshold
 );
 composer.addPass(bloomPass);
 
@@ -445,7 +445,7 @@ function createFlowerMaterial(alphaTex, flowerColor, threshold, mode) {
             vec3 finalColor = mix(uStemColor, uFlowerColor, mixStrength);
 
             // OVER CAPE DES COULEURS POUR QUE LE BLOOM FONCTIONNE :D
-            diffuseColor.rgb = finalColor * 20.0;
+            diffuseColor.rgb = finalColor * 15.0;
             diffuseColor.a = mask;
             `
         );
@@ -504,28 +504,34 @@ flowerAlphas.forEach((tex, i) => {
 
 
 // GESTION LOD + IMPOSTER
+const _v = new THREE.Vector3();
 function updateLODs() {
-    if (!meshLOD0 || !meshLOD1 || !meshLOD2) return; // Sécurité si pas encore chargé
+    if (!meshLOD0 || !meshLOD1 || !meshLOD2) return;
 
-    const camPos = camera.position;
+    // --- FIX : Récupérer la vraie position mondiale de la caméra ---
+    const camWorldPos = new THREE.Vector3();
+    camera.getWorldPosition(camWorldPos);
 
     for (let i = 0; i < CONFIG.treeCount; i++) {
         const tree = treesData[i];
         if (!tree) continue;
 
-        const dist = camPos.distanceTo(tree.position);
+        const dist = camWorldPos.distanceTo(tree.position);
+
         dummy.position.copy(tree.position);
         dummy.position.y -= 0.7;
 
-        if (dist < 60) {
+        if (dist < 40) {
+            // LOD0
             dummy.quaternion.copy(tree.quaternion);
             setInstanceScale(i, tree.s, meshLOD0, meshLOD1, meshLOD2);
-        } else if (dist < 120) {
+        } else if (dist < 90) {
+            // LOD1
             dummy.quaternion.copy(tree.quaternion);
             setInstanceScale(i, tree.s, meshLOD1, meshLOD0, meshLOD2);
         } else {
-            // Billboarding pour l'imposteur
-            dummy.lookAt(camPos.x, dummy.position.y, camPos.z);
+            // Imposteur (LOD2)
+            dummy.lookAt(camWorldPos.x, dummy.position.y, camWorldPos.z);
             setInstanceScale(i, tree.s, meshLOD2, meshLOD0, meshLOD1);
         }
     }
@@ -536,7 +542,6 @@ function updateLODs() {
 }
 
 function setInstanceScale(index, scaleVal, activeMesh, hide1, hide2) {
-    // On l'affiche sur le mesh actif
     dummy.scale.set(scaleVal, scaleVal, scaleVal);
     dummy.updateMatrix();
     activeMesh.setMatrixAt(index, dummy.matrix);
@@ -583,7 +588,7 @@ function createWaterMaterial() {
             #define MAX_ITER 5
 
             void main() {
-                float time = uTime * .5 + 23.0;
+                float time = uTime * 0.2;
                 
                 // On utilise vUv au lieu de fragCoord car c'est un plan
                 vec2 uv = vUv;
@@ -607,7 +612,7 @@ function createWaterMaterial() {
                 // Couleur de l'eau stylisée (bleu profond + caustiques)
                 colour = clamp(colour + vec3(0.0, 0.35, 0.5), 0.0, 1.0);
 
-                gl_FragColor = vec4(colour, 0.8); // 0.8 d'opacité
+                gl_FragColor = vec4(colour, 0.8); // 1.0 d'opacité
             }
         `
     });
@@ -704,20 +709,20 @@ function animate() {
     stats.begin();
     const delta = clock.getDelta();
     const time = performance.now() / 1000;
-    updateLeaves(time);
     frameCount++;
-    // controls.update();
-    composer.render();
-    stats.end();
-    requestAnimationFrame(animate);
-    if (frameCount % 10 === 0) updateLODs();
-    if (water && water.material.uniforms) {
-        water.material.uniforms.uTime.value = performance.now() / 1000;
-    }
     if (soldier) {
         // On passe 'terrain' pour le raycast de hauteur
         soldier.update(delta, terrain);
     }
+    // controls.update();
+    if (frameCount % 10 === 0) updateLODs();
+    if (water && water.material.uniforms) {
+        water.material.uniforms.uTime.value = performance.now() / 1000;
+    }
+    updateLeaves(time);
+    composer.render();
+    stats.end();
+    requestAnimationFrame(animate);
     // console.log(frameCount);
 }
 animate();
