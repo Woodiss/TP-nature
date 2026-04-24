@@ -1,0 +1,138 @@
+/* Enlever les marges par défaut du navigateur */
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: 'Outfit', sans-serif;
+  background-color: #000;
+}
+
+/* Le canvas prendra automatiquement toute la taille définie par le renderer */
+canvas {
+  display: block;
+}
+
+/* Styles pour la popup des contrôles */
+#controls-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 450px;
+  background: rgba(15, 25, 15, 0.7);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 40px;
+  color: white;
+  z-index: 1000;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 1;
+  visibility: visible;
+}
+
+#controls-popup.hidden {
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, -45%) scale(0.95);
+}
+
+#controls-popup h2 {
+  margin-top: 0;
+  font-weight: 600;
+  font-size: 28px;
+  letter-spacing: -0.5px;
+  margin-bottom: 30px;
+  background: linear-gradient(135deg, #fff 0%, #a5d6a7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.control-row {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 15px;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  transition: transform 0.2s ease;
+}
+
+.control-row:hover {
+  transform: translateX(5px);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.key-box {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 3px solid rgba(0, 0, 0, 0.3);
+  min-width: 30px;
+  text-align: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.control-label {
+  font-weight: 300;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+#close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+#close-btn:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.start-hint {
+  margin-top: 20px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
+}
+
+/* Animation d'entrée */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -55%);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+#controls-popup {
+  animation: fadeIn 0.6s ease-out forwards;
+}

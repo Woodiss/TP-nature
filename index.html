@@ -21,26 +21,53 @@
         }
     </script>
 
-    <style>
-        /* Enlever les marges par défaut du navigateur */
-        body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            /* Empêcher les barres de défilement */
-        }
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
 
-        /* Le canvas prendra automatiquement toute la taille définie par le renderer */
-        canvas {
-            display: block;
-            /* Enlever l'espace blanc en bas du canvas */
-        }
-    </style>
+    <link rel="stylesheet" href="style/style.css">
 </head>
 
 <body>
     <div id="ThreeJS" style="position: absolute; left:0px; top:0px"></div>
+
+    <div id="controls-popup">
+        <button id="close-btn" aria-label="Fermer">&times;</button>
+        <h2>Commandes</h2>
+
+        <div class="control-row">
+            <span class="control-label">Avancer</span>
+            <span class="key-box">Z</span>
+        </div>
+        <div class="control-row">
+            <span class="control-label">Reculer</span>
+            <span class="key-box">S</span>
+        </div>
+        <div class="control-row">
+            <span class="control-label">Tourner à gauche</span>
+            <span class="key-box">Q</span>
+        </div>
+        <div class="control-row">
+            <span class="control-label">Tourner à droite</span>
+            <span class="key-box">D</span>
+        </div>
+        <div class="control-row">
+            <span class="control-label">Courir</span>
+            <span class="key-box">Shift</span>
+        </div>
+
+        <div class="start-hint">Appuyez sur la croix pour commencer l'aventure</div>
+    </div>
+
     <script type="module" src="main.js"></script>
+
+    <script>
+        document.getElementById('close-btn').addEventListener('click', () => {
+            const popup = document.getElementById('controls-popup');
+            popup.classList.add('hidden');
+            setTimeout(() => {
+                popup.style.display = 'none';
+            }, 400);
+        });
+    </script>
 </body>
 
 </html>

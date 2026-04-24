@@ -114,7 +114,7 @@ export class Soldier {
       this.playAnimation('Idle');
     }
 
-    // --- HAUTEUR DYNAMIQUE (Raycast) ---
+    // --- thx Dany pour le raycast ---
     const rayOrigin = new THREE.Vector3(this.playerGroup.position.x, 20, this.playerGroup.position.z);
     const raycaster = new THREE.Raycaster(rayOrigin, new THREE.Vector3(0, -1, 0));
     const intersects = raycaster.intersectObject(terrain);

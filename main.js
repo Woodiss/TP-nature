@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { MeshSurfaceSampler } from 'three/examples/jsm/math/MeshSurfaceSampler.js';
@@ -11,6 +10,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { Soldier } from './soldier.js';
+// import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 /**
  * BASE & INITIALISATION
@@ -612,7 +612,7 @@ function createWaterMaterial() {
                 // Couleur de l'eau stylisée (bleu profond + caustiques)
                 colour = clamp(colour + vec3(0.0, 0.35, 0.5), 0.0, 1.0);
 
-                gl_FragColor = vec4(colour, 0.8); // 1.0 d'opacité
+                gl_FragColor = vec4(colour, 0.3); // opacité
             }
         `
     });
