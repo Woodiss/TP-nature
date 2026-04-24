@@ -10,12 +10,14 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { Soldier } from './soldier.js';
 
 /**
  * BASE & INITIALISATION
  */
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const clock = new THREE.Clock();
 let frameCount = 0;
 let meshLOD0, meshLOD1, meshLOD2;
 
@@ -101,6 +103,11 @@ scene.background = cubeTextureLoader.load([
 const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.2);
 scene.add(hemiLight);
 
+let soldier = new Soldier(scene, camera);
+soldier.load('assets/soldier.glb').then(() => {
+    console.log("Soldat prêt !");
+});
+
 const sunLight = new THREE.DirectionalLight(0xfff5b6, 1.2);
 sunLight.position.set(-50, 80, 50);
 sunLight.castShadow = true;
@@ -122,8 +129,8 @@ sunLight.shadow.mapSize.height = 2048;
 scene.add(sunLight);
 
 camera.position.set(15, 10, 15);
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
+// const controls = new OrbitControls(camera, renderer.domElement);
+// controls.enableDamping = true;
 
 /**
  * TERRAIN
@@ -438,7 +445,7 @@ function createFlowerMaterial(alphaTex, flowerColor, threshold, mode) {
             vec3 finalColor = mix(uStemColor, uFlowerColor, mixStrength);
 
             // OVER CAPE DES COULEURS POUR QUE LE BLOOM FONCTIONNE :D
-            diffuseColor.rgb = finalColor * 10.5;
+            diffuseColor.rgb = finalColor * 20.0;
             diffuseColor.a = mask;
             `
         );
@@ -695,16 +702,21 @@ function updateLeaves(time) {
 // ANIMATIONS
 function animate() {
     stats.begin();
+    const delta = clock.getDelta();
     const time = performance.now() / 1000;
     updateLeaves(time);
     frameCount++;
-    controls.update();
+    // controls.update();
     composer.render();
     stats.end();
     requestAnimationFrame(animate);
     if (frameCount % 10 === 0) updateLODs();
     if (water && water.material.uniforms) {
         water.material.uniforms.uTime.value = performance.now() / 1000;
+    }
+    if (soldier) {
+        // On passe 'terrain' pour le raycast de hauteur
+        soldier.update(delta, terrain);
     }
     // console.log(frameCount);
 }
