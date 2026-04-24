@@ -16,6 +16,12 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
  */
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+let frameCount = 0;
+let meshLOD0, meshLOD1, meshLOD2;
+
+// fog
+const fogColor = 0x87ceeb;
+scene.fog = new THREE.FogExp2(fogColor, 0.005);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -24,6 +30,17 @@ renderer.toneMapping = THREE.ReinhardToneMapping;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.getElementById('ThreeJS').appendChild(renderer.domElement);
+
+// CONFIG
+const CONFIG = {
+    terrainSize: 128,
+    terrainSegments: 250,
+    treeCount: 150,
+    bushCount: 100,
+    flowersPerType: 100,
+    grassCount: 100000,
+    leafCount: 500,
+};
 
 /**
  * INITIALISATION DU COMPOSER
@@ -37,9 +54,9 @@ composer.addPass(renderPass);
 
 const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight),
-    1.0,  // strength
-    0.4,  // radius
-    0.90  // threshold
+    0.15,  // strength
+    0.5,  // radius
+    0.3   // threshold
 );
 composer.addPass(bloomPass);
 
@@ -73,11 +90,13 @@ const noise2D = createNoise2D(myRandom);
  */
 const cubeTextureLoader = new THREE.CubeTextureLoader();
 scene.background = cubeTextureLoader.load([
-    'assets/sky_42_2k/sky_42_cubemap_2k/px.png', 'assets/sky_42_2k/sky_42_cubemap_2k/nx.png',
-    'assets/sky_42_2k/sky_42_cubemap_2k/py.png', 'assets/sky_42_2k/sky_42_cubemap_2k/ny.png',
-    'assets/sky_42_2k/sky_42_cubemap_2k/pz.png', 'assets/sky_42_2k/sky_42_cubemap_2k/nz.png'
+    'assets/sky_42_2k/sky_42_cubemap_2k/px.png',
+    'assets/sky_42_2k/sky_42_cubemap_2k/nx.png',
+    'assets/sky_42_2k/sky_42_cubemap_2k/py.png',
+    'assets/sky_42_2k/sky_42_cubemap_2k/ny.png',
+    'assets/sky_42_2k/sky_42_cubemap_2k/pz.png',
+    'assets/sky_42_2k/sky_42_cubemap_2k/nz.png'
 ]);
-scene.fog = new THREE.FogExp2(0x87ceeb, 0.002);
 
 const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.2);
 scene.add(hemiLight);
@@ -109,7 +128,7 @@ controls.enableDamping = true;
 /**
  * TERRAIN
  */
-const geometrySol = new THREE.PlaneGeometry(128, 128, 250, 250);
+const geometrySol = new THREE.PlaneGeometry(CONFIG.terrainSize, CONFIG.terrainSize, CONFIG.terrainSegments, CONFIG.terrainSegments);
 const posAttr = geometrySol.attributes.position;
 for (let i = 0; i < posAttr.count; i++) {
     const x = posAttr.getX(i);
@@ -160,13 +179,22 @@ const _upWorld = new THREE.Vector3(0, 1, 0);
 /**
  * ARBRES (Modèle centré Blender)
  */
+const treesData = [];
 const treeColor = textureLoader.load('assets/tree/TreeColor2.png');
 const treeNormal = textureLoader.load('assets/tree/TreeNormal-512.jpg');
 const treeRmao = textureLoader.load('assets/tree/TreeRmao-512.jpg');
 treeColor.flipY = treeNormal.flipY = treeRmao.flipY = false;
 treeColor.colorSpace = THREE.SRGBColorSpace;
 
-gltfLoader.load('assets/tree/tree.glb', (gltf) => {
+const matImpostor = new THREE.MeshStandardMaterial({
+    map: textureLoader.load('assets/tree/TreeImpostor.png'),
+    transparent: true,
+    alphaTest: 0.5,
+    side: THREE.DoubleSide
+});
+
+// Fonction pour extraire la géométrie d'un GLTF
+function getMergedGeometry(gltf) {
     const geometries = [];
     gltf.scene.updateMatrixWorld(true);
     gltf.scene.traverse((child) => {
@@ -176,46 +204,85 @@ gltfLoader.load('assets/tree/tree.glb', (gltf) => {
             geometries.push(geom);
         }
     });
+    return BufferGeometryUtils.mergeGeometries(geometries);
+}
 
-    const mergedGeom = BufferGeometryUtils.mergeGeometries(geometries);
+// Chargement synchronisé des modèles 3D
+Promise.all([
+    gltfLoader.loadAsync('assets/tree/tree.glb'),
+    gltfLoader.loadAsync('assets/tree/treeLOD1.glb')
+]).then(([gltfHigh, gltfLow]) => {
+
+    const geomHigh = getMergedGeometry(gltfHigh);
+    const geomLow = getMergedGeometry(gltfLow);
+
+    // Géo Imposteur (Plan vertical)
+    const geomImpostor = new THREE.PlaneGeometry(4, 7);
+    geomImpostor.translate(0, 3.5, 0);
+
+    // Création des 3 InstancedMeshes
     const treeMat = new THREE.MeshStandardMaterial({
         map: treeColor,
         normalMap: treeNormal,
         aoMap: treeRmao,
-        roughnessMap: treeRmao,
-        metalnessMap: treeRmao,
         alphaTest: 0.5,
         transparent: true,
         side: THREE.DoubleSide
     });
 
-    const treeCount = 150;
-    const treeMesh = new THREE.InstancedMesh(mergedGeom, treeMat, treeCount);
-    treeMesh.castShadow = true;
-    scene.add(treeMesh);
+    const treeMatLow = new THREE.MeshStandardMaterial({
+        map: treeColor, // On garde la couleur
+        alphaTest: 0.5,
+        transparent: true,
+        side: THREE.DoubleSide
+        // On retire normalMap et aoMap pour soulager le GPU
+    });
 
-    for (let i = 0; i < treeCount; i++) {
+    meshLOD0 = new THREE.InstancedMesh(geomHigh, treeMat, CONFIG.treeCount);
+    meshLOD1 = new THREE.InstancedMesh(geomLow, treeMatLow, CONFIG.treeCount);
+    meshLOD2 = new THREE.InstancedMesh(geomImpostor, matImpostor, CONFIG.treeCount);
+
+    meshLOD0.castShadow = true;
+    scene.add(meshLOD0, meshLOD1, meshLOD2);
+    meshLOD0.frustumCulled = false;
+    meshLOD1.frustumCulled = false;
+    meshLOD2.frustumCulled = false;
+
+    // Remplissage des données et placement initial
+    for (let i = 0; i < CONFIG.treeCount; i++) {
         sampler.sample(_position, _normal);
-        const upLocal = new THREE.Vector3(0, 0, 1);
-
         terrain.localToWorld(_position);
-        dummy.position.copy(_position);
-        dummy.position.y -= 0.7;
-        _quaternion.setFromAxisAngle(_upWorld, myRandom() * Math.PI * 2);
-        dummy.quaternion.copy(_quaternion);
+
+        // pas placer dans l'eau
+        if (_position.y < 0.25) {
+            i--;
+            continue;
+        }
+
+        const pos = _position.clone();
+        pos.y -= 0.7;
+        const quat = new THREE.Quaternion().setFromAxisAngle(_upWorld, myRandom() * Math.PI * 2);
         const s = 2 + myRandom() * 1.5;
-        dummy.scale.set(s, s, s);
+
+        treesData.push({ position: pos, quaternion: quat, s: s });
+
+        // On initialise tout à scale 0 (updateLODs gèrera l'affichage)
+        dummy.scale.set(0, 0, 0);
         dummy.updateMatrix();
-        treeMesh.setMatrixAt(i, dummy.matrix);
+        meshLOD0.setMatrixAt(i, dummy.matrix);
+        meshLOD1.setMatrixAt(i, dummy.matrix);
+        meshLOD2.setMatrixAt(i, dummy.matrix);
     }
-    treeMesh.instanceMatrix.needsUpdate = true;
+
+    meshLOD0.instanceMatrix.needsUpdate = true;
+    meshLOD1.instanceMatrix.needsUpdate = true;
+    meshLOD2.instanceMatrix.needsUpdate = true;
 });
 
 /**
  * HERBE (Atlas 2x2)
  */
-const grassCount = 100000;
-const grassPerVariant = Math.floor(grassCount / 4);
+const grassPerVariant = Math.floor(CONFIG.grassCount / 4);
 const grassColor = textureLoader.load('assets/grass/GrassColor.png');
 const grassNormal = textureLoader.load('assets/grass/GrassNormal.png');
 
@@ -249,9 +316,10 @@ const grassMeshes = grassGeos.map(geo => {
 });
 
 const counters = [0, 0, 0, 0];
-for (let i = 0; i < grassCount; i++) {
+for (let i = 0; i < CONFIG.grassCount; i++) {
     sampler.sample(_position, _normal);
     terrain.localToWorld(_position);
+    if (_position.y < 0.30) continue;
     dummy.position.copy(_position);
     _quaternion.setFromAxisAngle(_upWorld, myRandom() * Math.PI * 2);
     dummy.quaternion.copy(_quaternion);
@@ -284,14 +352,16 @@ const bushMat = new THREE.MeshStandardMaterial({
     alphaTest: 0.5, side: THREE.DoubleSide
 });
 
-const bushCount = 300;
-const bushMesh = new THREE.InstancedMesh(bushGeo, bushMat, bushCount);
+const bushMesh = new THREE.InstancedMesh(bushGeo, bushMat, CONFIG.bushCount);
+initInvisible(bushMesh, CONFIG.bushCount);
 scene.add(bushMesh);
 
-for (let i = 0; i < bushCount; i++) {
+for (let i = 0; i < CONFIG.bushCount; i++) {
     sampler.sample(_position, _normal);
     terrain.localToWorld(_position);
     dummy.position.copy(_position);
+    // pas placer dans l'eau
+    if (_position.y < 0.30) continue;
     _quaternion.setFromAxisAngle(_upWorld, myRandom() * Math.PI * 2);
     dummy.quaternion.copy(_quaternion);
     const s = 0.5 + myRandom();
@@ -367,12 +437,12 @@ function createFlowerMaterial(alphaTex, flowerColor, threshold, mode) {
             float mixStrength = smoothstep(uThreshold - 0.1, uThreshold + 0.1, factor);
             vec3 finalColor = mix(uStemColor, uFlowerColor, mixStrength);
 
-            diffuseColor.rgb = finalColor;
+            // OVER CAPE DES COULEURS POUR QUE LE BLOOM FONCTIONNE :D
+            diffuseColor.rgb = finalColor * 10.5;
             diffuseColor.a = mask;
             `
         );
     };
-
     return material;
 }
 
@@ -392,7 +462,6 @@ const crossedGeo = BufferGeometryUtils.mergeGeometries([
     flowerGeo.clone().rotateY(Math.PI / 2)
 ]);
 
-const flowersPerType = 100;
 
 flowerAlphas.forEach((tex, i) => {
     const config = flowerConfigs[i];
@@ -404,11 +473,15 @@ flowerAlphas.forEach((tex, i) => {
         config.mode
     );
 
-    const mesh = new THREE.InstancedMesh(crossedGeo, mat, flowersPerType);
+    const mesh = new THREE.InstancedMesh(crossedGeo, mat, CONFIG.flowersPerType);
+    initInvisible(mesh, CONFIG.flowersPerType)
 
-    for (let j = 0; j < flowersPerType; j++) {
+    for (let j = 0; j < CONFIG.flowersPerType; j++) {
         sampler.sample(_position, _normal);
         terrain.localToWorld(_position);
+        if (_position.y < 0.25) {
+            continue;
+        }
 
         dummy.position.copy(_position);
         dummy.rotation.y = myRandom() * Math.PI;
@@ -422,13 +495,218 @@ flowerAlphas.forEach((tex, i) => {
     scene.add(mesh);
 });
 
+
+// GESTION LOD + IMPOSTER
+function updateLODs() {
+    if (!meshLOD0 || !meshLOD1 || !meshLOD2) return; // Sécurité si pas encore chargé
+
+    const camPos = camera.position;
+
+    for (let i = 0; i < CONFIG.treeCount; i++) {
+        const tree = treesData[i];
+        if (!tree) continue;
+
+        const dist = camPos.distanceTo(tree.position);
+        dummy.position.copy(tree.position);
+        dummy.position.y -= 0.7;
+
+        if (dist < 60) {
+            dummy.quaternion.copy(tree.quaternion);
+            setInstanceScale(i, tree.s, meshLOD0, meshLOD1, meshLOD2);
+        } else if (dist < 120) {
+            dummy.quaternion.copy(tree.quaternion);
+            setInstanceScale(i, tree.s, meshLOD1, meshLOD0, meshLOD2);
+        } else {
+            // Billboarding pour l'imposteur
+            dummy.lookAt(camPos.x, dummy.position.y, camPos.z);
+            setInstanceScale(i, tree.s, meshLOD2, meshLOD0, meshLOD1);
+        }
+    }
+
+    meshLOD0.instanceMatrix.needsUpdate = true;
+    meshLOD1.instanceMatrix.needsUpdate = true;
+    meshLOD2.instanceMatrix.needsUpdate = true;
+}
+
+function setInstanceScale(index, scaleVal, activeMesh, hide1, hide2) {
+    // On l'affiche sur le mesh actif
+    dummy.scale.set(scaleVal, scaleVal, scaleVal);
+    dummy.updateMatrix();
+    activeMesh.setMatrixAt(index, dummy.matrix);
+
+    // On le cache sur les autres (scale à 0)
+    dummy.scale.set(0, 0, 0);
+    dummy.updateMatrix();
+    hide1.setMatrixAt(index, dummy.matrix);
+    hide2.setMatrixAt(index, dummy.matrix);
+}
+
+
+// WATER + SHADER
+// Création du plan d'eau
+const waterGeometry = new THREE.PlaneGeometry(CONFIG.terrainSize, CONFIG.terrainSize); // Plus grand que le terrain
+const waterMaterial = createWaterMaterial();
+const water = new THREE.Mesh(waterGeometry, waterMaterial);
+
+water.rotation.x = -Math.PI / 2; // À plat
+water.position.y = 0.25;
+scene.add(water);
+
+function createWaterMaterial() {
+    return new THREE.ShaderMaterial({
+        uniforms: {
+            uTime: { value: 0 },
+            uResolution: { value: new THREE.Vector2(CONFIG.terrainSize, CONFIG.terrainSize) }
+        },
+        transparent: true,
+        vertexShader: `
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                // On garde un plan plat pour ce shader (ou ajoute des vagues si tu veux)
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `,
+        fragmentShader: `
+            uniform float uTime;
+            uniform vec2 uResolution;
+            varying vec2 vUv;
+
+            #define TAU 6.28318530718
+            #define MAX_ITER 5
+
+            void main() {
+                float time = uTime * .5 + 23.0;
+                
+                // On utilise vUv au lieu de fragCoord car c'est un plan
+                vec2 uv = vUv;
+                
+                // Calcul de la turbulence (ton code adapté)
+                vec2 p = mod(uv * TAU * 5.0, TAU) - 250.0;
+                vec2 i = vec2(p);
+                float c = 1.0;
+                float inten = .005;
+
+                for (int n = 0; n < MAX_ITER; n++) {
+                    float t = time * (1.0 - (3.5 / float(n + 1)));
+                    i = p + vec2(cos(t - i.x) + sin(t + i.y), sin(t - i.y) + cos(t + i.x));
+                    c += 1.0 / length(vec2(p.x / (sin(i.x + t) / inten), p.y / (cos(i.y + t) / inten)));
+                }
+                
+                c /= float(MAX_ITER);
+                c = 1.17 - pow(c, 1.4);
+                
+                vec3 colour = vec3(pow(abs(c), 8.0));
+                // Couleur de l'eau stylisée (bleu profond + caustiques)
+                colour = clamp(colour + vec3(0.0, 0.35, 0.5), 0.0, 1.0);
+
+                gl_FragColor = vec4(colour, 0.8); // 0.8 d'opacité
+            }
+        `
+    });
+}
+
+function initInvisible(mesh, count) {
+    for (let i = 0; i < count; i++) {
+        dummy.scale.set(0, 0, 0);
+        dummy.updateMatrix();
+        mesh.setMatrixAt(i, dummy.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+}
+
+// PARTICLES
+const countShrek = Math.floor(CONFIG.leafCount * 0.05); // 5%
+const countNormal = Math.floor((CONFIG.leafCount - countShrek) / 2);
+
+const counts = [countNormal, countNormal, countShrek];
+const textures = [
+    textureLoader.load('assets/particles/leaf.png'),
+    textureLoader.load('assets/particles/leaf2.png'),
+    textureLoader.load('assets/particles/shrek.png')
+];
+const leafSystems = [];
+const leafGeo = new THREE.PlaneGeometry(4, 4);
+
+textures.forEach((tex, index) => {
+    // On crée un matériau par texture
+    const mat = new THREE.MeshStandardMaterial({
+        map: tex,
+        transparent: true,
+        alphaTest: 0.5,
+        side: THREE.DoubleSide,
+        fog: true
+    });
+
+    const count = counts[index];
+    const mesh = new THREE.InstancedMesh(leafGeo, mat, count);
+    mesh.frustumCulled = false;
+
+    const particles = [];
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            pos: new THREE.Vector3(
+                (myRandom() - 0.5) * CONFIG.terrainSize,
+                myRandom() * 13 + 5,
+                (myRandom() - 0.5) * CONFIG.terrainSize
+            ),
+            speed: 0.02 + myRandom() * 0.05,
+            rotSpeed: myRandom() * 0.02,
+            oscFreq: 0.5 + myRandom() * 2,
+            oscAmp: 0.2 + myRandom() * 0.5,
+            offset: myRandom() * Math.PI * 2
+        });
+    }
+
+    leafSystems.push({ mesh, data: particles, count });
+    scene.add(mesh);
+});
+
+function updateLeaves(time) {
+    leafSystems.forEach(system => {
+        for (let i = 0; i < system.count; i++) {
+            const p = system.data[i];
+
+            // Logique de mouvement (identique à ton idée)
+            p.pos.y -= p.speed;
+            const currentX = p.pos.x + Math.sin(time * p.oscFreq + p.offset) * p.oscAmp;
+            const currentZ = p.pos.z + Math.cos(time * p.oscFreq + p.offset) * p.oscAmp;
+
+            if (p.pos.y < 0) {
+                p.pos.y = 13;
+                p.pos.x = (myRandom() - 0.5) * CONFIG.terrainSize;
+                p.pos.z = (myRandom() - 0.5) * CONFIG.terrainSize;
+            }
+
+            dummy.position.set(currentX, p.pos.y, currentZ);
+            dummy.rotation.set(time * p.rotSpeed, time * p.rotSpeed * 1.5, 0);
+
+            // Si c'est Shrek, on peut le faire un peu plus gros pour la blague
+            const s = (system.count < 50) ? 0.4 : 0.2;
+            dummy.scale.set(s, s, s);
+
+            dummy.updateMatrix();
+            system.mesh.setMatrixAt(i, dummy.matrix);
+        }
+        system.mesh.instanceMatrix.needsUpdate = true;
+    });
+}
+
 // ANIMATIONS
 function animate() {
     stats.begin();
+    const time = performance.now() / 1000;
+    updateLeaves(time);
+    frameCount++;
     controls.update();
     composer.render();
     stats.end();
     requestAnimationFrame(animate);
+    if (frameCount % 10 === 0) updateLODs();
+    if (water && water.material.uniforms) {
+        water.material.uniforms.uTime.value = performance.now() / 1000;
+    }
+    // console.log(frameCount);
 }
 animate();
 
