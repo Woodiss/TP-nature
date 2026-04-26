@@ -17,6 +17,7 @@ export class TreeSystem {
         this._pos     = new THREE.Vector3();
         this._normal  = new THREE.Vector3();
         this._upWorld = new THREE.Vector3(0, 1, 0);
+        this._camPos  = new THREE.Vector3(); // réutilisé chaque update, évite le GC
     }
 
     async load() {
@@ -88,7 +89,7 @@ export class TreeSystem {
     update(camera) {
         if (!this._meshLOD0) return;
 
-        const camPos = new THREE.Vector3();
+        const camPos = this._camPos;
         camera.getWorldPosition(camPos);
         const { _dummy } = this;
 

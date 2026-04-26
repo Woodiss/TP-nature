@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { CONFIG } from '../config.js';
 
 export function setupEnvironment(scene) {
     scene.fog = new THREE.FogExp2(0x87ceeb, 0.005);
@@ -16,14 +17,18 @@ export function setupEnvironment(scene) {
 
     const sunLight = new THREE.DirectionalLight(0xfff5b6, 1.2);
     sunLight.position.set(-50, 80, 50);
-    sunLight.castShadow = true;
-    sunLight.shadow.camera.left   = -70;
-    sunLight.shadow.camera.right  =  70;
-    sunLight.shadow.camera.top    =  70;
-    sunLight.shadow.camera.bottom = -70;
-    sunLight.shadow.camera.near   = 0.5;
-    sunLight.shadow.camera.far    = 500;
-    sunLight.shadow.mapSize.width  = 2048;
-    sunLight.shadow.mapSize.height = 2048;
+
+    if (CONFIG.shadows) {
+        sunLight.castShadow = true;
+        sunLight.shadow.camera.left   = -70;
+        sunLight.shadow.camera.right  =  70;
+        sunLight.shadow.camera.top    =  70;
+        sunLight.shadow.camera.bottom = -70;
+        sunLight.shadow.camera.near   = 0.5;
+        sunLight.shadow.camera.far    = 500;
+        sunLight.shadow.mapSize.width  = CONFIG.shadowMapSize;
+        sunLight.shadow.mapSize.height = CONFIG.shadowMapSize;
+    }
+
     scene.add(sunLight);
 }

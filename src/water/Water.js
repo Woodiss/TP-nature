@@ -9,13 +9,12 @@ const VERTEX_SHADER = /* glsl */`
     }
 `;
 
+// MAX_ITER est injecté via ShaderMaterial.defines — pas de string replace fragile
 const FRAGMENT_SHADER = /* glsl */`
     uniform float uTime;
-    uniform vec2 uResolution;
     varying vec2 vUv;
 
     #define TAU 6.28318530718
-    #define MAX_ITER 5
 
     void main() {
         float time = uTime * 0.2;
@@ -41,10 +40,8 @@ const FRAGMENT_SHADER = /* glsl */`
 export class WaterMesh {
     constructor(scene) {
         this._material = new THREE.ShaderMaterial({
-            uniforms: {
-                uTime:       { value: 0 },
-                uResolution: { value: new THREE.Vector2(CONFIG.terrainSize, CONFIG.terrainSize) },
-            },
+            defines: { MAX_ITER: CONFIG.waterIter },
+            uniforms: { uTime: { value: 0 } },
             transparent: true,
             vertexShader:   VERTEX_SHADER,
             fragmentShader: FRAGMENT_SHADER,
