@@ -33,22 +33,67 @@ const leaves = new LeafSystem(scene);
 const soldier = new Soldier(scene, camera);
 soldier.load('assets/soldier.glb');
 
+// ─── Diagnostic de performance ────────────────────────────────────────────────
+// Mesure sur 60 frames glissantes :
+//   JS      = tout le travail CPU avant soumission GPU (soldier, LOD, leaves…)
+//   Render  = temps de soumission des commandes WebGL (Three.js state + draw calls)
+//   Frame Δ = temps réel entre 2 rAF — inclut l'attente de fin GPU frame précédente
+//   GPU est ≈ Frame Δ - JS - Render
+//
+// Si "GPU est" >> "JS + Render" → bottleneck GPU (fill rate, shaders, bloom…)
+// Si "JS" >> reste              → bottleneck CPU (animations, LOD, raycaster…)
+// ─────────────────────────────────────────────────────────────────────────────
+let _lastRafTime = performance.now();
+let _accumJS = 0, _accumRender = 0, _accumFrame = 0, _diagFrames = 0;
+
 let frameCount = 0;
 
 function animate() {
+    const rafNow   = performance.now();
+    const frameDt  = rafNow - _lastRafTime;
+    _lastRafTime   = rafNow;
+
     stats.begin();
     const delta = clock.getDelta();
     const time  = performance.now() / 1000;
     frameCount++;
 
-    soldier.update(delta, terrain.mesh);
+    // — CPU : logique JS ——
+    const t0 = performance.now();
+    soldier.update(delta);
     if (frameCount % 10 === 0) trees.update(camera);
     water.update(time);
     leaves.update(time);
+    const jsMs = performance.now() - t0;
 
+    // — CPU : soumission des commandes GPU ——
+    const t1 = performance.now();
     postProcessing.render();
+    const renderMs = performance.now() - t1;
+
     perfOverlay.update();
     stats.end();
+
+    // Accumulation pour moyenne sur 60 frames
+    _accumJS     += jsMs;
+    _accumRender += renderMs;
+    _accumFrame  += frameDt;
+    _diagFrames++;
+
+    if (_diagFrames === 60) {
+        const avgJs     = (_accumJS     / 60).toFixed(2);
+        const avgRender = (_accumRender / 60).toFixed(2);
+        const avgFrame  = (_accumFrame  / 60).toFixed(2);
+        const avgGPU    = Math.max(0, parseFloat(avgFrame) - parseFloat(avgJs) - parseFloat(avgRender)).toFixed(2);
+        console.log(
+            `[PERF] Frame: ${avgFrame}ms` +
+            ` | JS logique: ${avgJs}ms` +
+            ` | Soumission GPU: ${avgRender}ms` +
+            ` | Attente GPU≈: ${avgGPU}ms`
+        );
+        _accumJS = _accumRender = _accumFrame = _diagFrames = 0;
+    }
+
     requestAnimationFrame(animate);
 }
 animate();

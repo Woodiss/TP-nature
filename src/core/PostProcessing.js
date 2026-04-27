@@ -16,12 +16,19 @@ export class PostProcessing {
 
         this.composer.addPass(new RenderPass(scene, camera));
 
-        const bw = window.innerWidth  * CONFIG.bloomResScale;
-        const bh = window.innerHeight * CONFIG.bloomResScale;
-        this.composer.addPass(new UnrealBloomPass(
-            new THREE.Vector2(bw, bh),
-            CONFIG.bloomStrength, 0.5, 0.8
-        ));
+        // ?bloom=0 dans l'URL pour désactiver (test de perf)
+        const bloomDisabled = new URLSearchParams(window.location.search).get('bloom') === '0';
+        if (!bloomDisabled) {
+            const bw = window.innerWidth  * CONFIG.bloomResScale;
+            const bh = window.innerHeight * CONFIG.bloomResScale;
+            this.composer.addPass(new UnrealBloomPass(
+                new THREE.Vector2(bw, bh),
+                CONFIG.bloomStrength, 0.5, 0.8
+            ));
+            console.log(`[Bloom] actif — résolution ×${CONFIG.bloomResScale}`);
+        } else {
+            console.log('[Bloom] désactivé (?bloom=0)');
+        }
 
         this.composer.addPass(new OutputPass());
 
