@@ -2,6 +2,7 @@ import { SceneSetup }      from './src/core/SceneSetup.js';
 import { PostProcessing }   from './src/core/PostProcessing.js';
 import { setupEnvironment } from './src/core/Environment.js';
 import { PerfOverlay }      from './src/core/PerfOverlay.js';
+import { DebugPanel }       from './src/debug/DebugPanel.js';
 import { Terrain }          from './src/terrain/Terrain.js';
 import { TreeSystem }       from './src/vegetation/Trees.js';
 import { GrassSystem }      from './src/vegetation/Grass.js';
@@ -9,56 +10,67 @@ import { BushSystem }       from './src/vegetation/Bushes.js';
 import { FlowerSystem }     from './src/vegetation/Flowers.js';
 import { WaterMesh }        from './src/water/Water.js';
 import { LeafSystem }       from './src/particles/Leaves.js';
-import { Soldier }          from './soldier.js';
+import { Soldier }          from './src/player/Soldier.js';
 
+// ─── Setup ───────────────────────────────────────────────────────────────────
 const { scene, camera, renderer, clock, stats } = new SceneSetup();
 const postProcessing = new PostProcessing(renderer, scene, camera);
 const perfOverlay    = new PerfOverlay(stats, renderer);
 
-setupEnvironment(scene);
+const { sunLight } = setupEnvironment(scene);
 camera.position.set(15, 10, 15);
 
+// ─── Scène ───────────────────────────────────────────────────────────────────
 const terrain = new Terrain(scene);
 
-const trees = new TreeSystem(scene, terrain.sampler, terrain.mesh);
-trees.load();
-
-new GrassSystem(scene,  terrain.sampler, terrain.mesh);
-new BushSystem(scene,   terrain.sampler, terrain.mesh);
-new FlowerSystem(scene, terrain.sampler, terrain.mesh);
-
-const water  = new WaterMesh(scene);
-const leaves = new LeafSystem(scene);
-
+const trees   = new TreeSystem(scene, terrain.sampler, terrain.mesh);
+const grass   = new GrassSystem(scene,  terrain.sampler, terrain.mesh);
+const bushes  = new BushSystem(scene,   terrain.sampler, terrain.mesh);
+const flowers = new FlowerSystem(scene, terrain.sampler, terrain.mesh);
+const water   = new WaterMesh(scene);
+const leaves  = new LeafSystem(scene);
 const soldier = new Soldier(scene, camera);
-soldier.load('assets/soldier.glb');
 
-// ─── Diagnostic de performance ────────────────────────────────────────────────
-// Mesure sur 60 frames glissantes :
-//   JS      = tout le travail CPU avant soumission GPU (soldier, LOD, leaves…)
-//   Render  = temps de soumission des commandes WebGL (Three.js state + draw calls)
-//   Frame Δ = temps réel entre 2 rAF — inclut l'attente de fin GPU frame précédente
-//   GPU est ≈ Frame Δ - JS - Render
-//
-// Si "GPU est" >> "JS + Render" → bottleneck GPU (fill rate, shaders, bloom…)
-// Si "JS" >> reste              → bottleneck CPU (animations, LOD, raycaster…)
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Debug panel (uniquement avec ?debug=1) ───────────────────────────────────
+new DebugPanel({ scene, postProcessing, systems: { trees, grass, bushes, flowers, water, leaves }, terrain, sunLight });
+
+// ─── Chargement async + compilation shaders ──────────────────────────────────
+async function init() {
+    await Promise.all([
+        trees.load(),
+        soldier.load('assets/soldier.glb'),
+    ]);
+
+    // Tous les objets sont dans la scène : on compile tous les shaders d'un coup.
+    // Élimine les pics de 30ms dus à la compilation GLSL JIT sur les premières frames.
+    renderer.compile(scene, camera);
+
+    hideLoader();
+    animate();
+}
+
+function hideLoader() {
+    const el = document.getElementById('loading-wrapper');
+    if (!el) return;
+    el.classList.add('hidden');
+    setTimeout(() => { el.style.display = 'none'; }, 850);
+}
+
+// ─── Boucle d'animation ──────────────────────────────────────────────────────
 let _lastRafTime = performance.now();
 let _accumJS = 0, _accumRender = 0, _accumFrame = 0, _diagFrames = 0;
-
 let frameCount = 0;
 
 function animate() {
-    const rafNow   = performance.now();
-    const frameDt  = rafNow - _lastRafTime;
-    _lastRafTime   = rafNow;
+    const rafNow  = performance.now();
+    const frameDt = rafNow - _lastRafTime;
+    _lastRafTime  = rafNow;
 
     stats.begin();
     const delta = clock.getDelta();
     const time  = performance.now() / 1000;
     frameCount++;
 
-    // — CPU : logique JS ——
     const t0 = performance.now();
     soldier.update(delta);
     if (frameCount % 10 === 0) trees.update(camera);
@@ -66,7 +78,6 @@ function animate() {
     leaves.update(time);
     const jsMs = performance.now() - t0;
 
-    // — CPU : soumission des commandes GPU ——
     const t1 = performance.now();
     postProcessing.render();
     const renderMs = performance.now() - t1;
@@ -74,7 +85,6 @@ function animate() {
     perfOverlay.update();
     stats.end();
 
-    // Accumulation pour moyenne sur 60 frames
     _accumJS     += jsMs;
     _accumRender += renderMs;
     _accumFrame  += frameDt;
@@ -87,13 +97,14 @@ function animate() {
         const avgGPU    = Math.max(0, parseFloat(avgFrame) - parseFloat(avgJs) - parseFloat(avgRender)).toFixed(2);
         console.log(
             `[PERF] Frame: ${avgFrame}ms` +
-            ` | JS logique: ${avgJs}ms` +
-            ` | Soumission GPU: ${avgRender}ms` +
-            ` | Attente GPU≈: ${avgGPU}ms`
+            ` | JS: ${avgJs}ms` +
+            ` | Submit: ${avgRender}ms` +
+            ` | GPU wait≈: ${avgGPU}ms`
         );
         _accumJS = _accumRender = _accumFrame = _diagFrames = 0;
     }
 
     requestAnimationFrame(animate);
 }
-animate();
+
+init();

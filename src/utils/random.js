@@ -9,5 +9,10 @@ function mulberry32(a) {
     };
 }
 
-export const myRandom = mulberry32(42);
-export const noise2D = createNoise2D(myRandom);
+export let myRandom = mulberry32(42);
+export let noise2D  = createNoise2D(myRandom);
+
+export function resetSeed(seed) {
+    myRandom = mulberry32(seed);
+    noise2D  = createNoise2D(myRandom);
+}

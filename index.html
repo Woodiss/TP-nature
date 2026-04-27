@@ -7,7 +7,6 @@
     <link rel="icon" type="image/png" href="assets/particles/shrek.png">
     <title>Shrek's Garden</title>
 
-    <!-- Import map CDN (versions fixées) -->
     <script type="importmap">
         {
             "imports": {
@@ -22,17 +21,25 @@
     </script>
 
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
-
     <link rel="stylesheet" href="style/style.css">
 </head>
 
 <body>
+
+    <!-- Loading screen (visible jusqu'à ce que tous les assets soient chargés) -->
+    <div id="loading-wrapper">
+        <div id="loading-content"></div>
+        <div id="loading-text">
+            <span id="loading-title">SHREK'S GARDEN</span>
+            <span id="loading-sub">Chargement…</span>
+        </div>
+    </div>
+
     <div id="ThreeJS" style="position: absolute; left:0px; top:0px"></div>
 
     <div id="controls-popup">
         <button id="close-btn" aria-label="Fermer">&times;</button>
         <h2>Commandes</h2>
-
         <div class="control-row">
             <span class="control-label">Avancer</span>
             <span class="key-box">Z</span>
@@ -53,7 +60,6 @@
             <span class="control-label">Courir</span>
             <span class="key-box">Shift</span>
         </div>
-
         <div class="start-hint">Appuyez sur la croix pour commencer l'aventure</div>
     </div>
 
@@ -63,9 +69,7 @@
         document.getElementById('close-btn').addEventListener('click', () => {
             const popup = document.getElementById('controls-popup');
             popup.classList.add('hidden');
-            setTimeout(() => {
-                popup.style.display = 'none';
-            }, 400);
+            setTimeout(() => { popup.style.display = 'none'; }, 400);
         });
     </script>
 </body>

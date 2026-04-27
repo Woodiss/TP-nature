@@ -18,13 +18,15 @@ export class PostProcessing {
 
         // ?bloom=0 dans l'URL pour désactiver (test de perf)
         const bloomDisabled = new URLSearchParams(window.location.search).get('bloom') === '0';
+        this.bloomPass = null;
         if (!bloomDisabled) {
             const bw = window.innerWidth  * CONFIG.bloomResScale;
             const bh = window.innerHeight * CONFIG.bloomResScale;
-            this.composer.addPass(new UnrealBloomPass(
+            this.bloomPass = new UnrealBloomPass(
                 new THREE.Vector2(bw, bh),
                 CONFIG.bloomStrength, 0.5, 0.8
-            ));
+            );
+            this.composer.addPass(this.bloomPass);
             console.log(`[Bloom] actif — résolution ×${CONFIG.bloomResScale}`);
         } else {
             console.log('[Bloom] désactivé (?bloom=0)');

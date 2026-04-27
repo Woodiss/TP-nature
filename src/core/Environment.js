@@ -31,4 +31,5 @@ export function setupEnvironment(scene) {
     }
 
     scene.add(sunLight);
+    return { sunLight };
 }
