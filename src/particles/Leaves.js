@@ -5,13 +5,12 @@ import { myRandom } from '../utils/random.js';
 
 export class LeafSystem {
     constructor(scene) {
-        this._scene    = scene;
-        this._systems  = [];
-        this._dummy    = new THREE.Object3D();
-        this._scale    = 0.2;
+        this._scene = scene;
+        this._systems = [];
+        this._dummy = new THREE.Object3D();
+        this._scale = 0.2;
         this._speedMul = 1.0;
 
-        // Géométrie et matériaux partagés, créés une fois
         this._geo = new THREE.PlaneGeometry(4, 4);
         this._textures = [
             textureLoader.load('assets/particles/leaf.png'),
@@ -23,7 +22,7 @@ export class LeafSystem {
     }
 
     _makeCounts(total) {
-        const countShrek  = Math.floor(total * 0.05);
+        const countShrek = Math.floor(total * 0.05);
         const countNormal = Math.floor((total - countShrek) / 2);
         return [countNormal, countNormal, countShrek];
     }
@@ -42,16 +41,16 @@ export class LeafSystem {
             this._scene.add(mesh);
 
             const data = Array.from({ length: n }, () => ({
-                pos:      new THREE.Vector3(
+                pos: new THREE.Vector3(
                     (myRandom() - 0.5) * CONFIG.terrainSize,
                     myRandom() * 13 + 5,
                     (myRandom() - 0.5) * CONFIG.terrainSize
                 ),
-                speed:    0.02 + myRandom() * 0.05,
+                speed: 0.02 + myRandom() * 0.05,
                 rotSpeed: myRandom() * 0.02,
-                oscFreq:  0.5 + myRandom() * 2,
-                oscAmp:   0.2 + myRandom() * 0.5,
-                offset:   myRandom() * Math.PI * 2,
+                oscFreq: 0.5 + myRandom() * 2,
+                oscAmp: 0.2 + myRandom() * 0.5,
+                offset: myRandom() * Math.PI * 2,
             }));
 
             return { mesh, data, count: n };
@@ -71,8 +70,8 @@ export class LeafSystem {
         this._place(config);
     }
 
-    setScale(v)        { this._scale    = v; }
-    setSpeedMul(v)     { this._speedMul = v; }
+    setScale(v) { this._scale = v; }
+    setSpeedMul(v) { this._speedMul = v; }
 
     update(time) {
         const { _dummy, _scale, _speedMul } = this;

@@ -10,7 +10,7 @@ export class PerfOverlay {
         stats.addPanel(this._panelDC);
         stats.addPanel(this._panelTri);
 
-        // Affiche le profil actif dans la console pour debug
+        // debug profile type
         console.log(`[PerfOverlay] Profil GPU détecté : ${PROFILE}`);
     }
 

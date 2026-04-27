@@ -5,21 +5,20 @@ import { myRandom } from '../utils/random.js';
 
 export class GrassSystem {
     constructor(scene, sampler, terrainMesh) {
-        this._scene       = scene;
-        this._sampler     = sampler;
+        this._scene = scene;
+        this._sampler = sampler;
         this._terrainMesh = terrainMesh;
-        this._meshes      = [];
+        this._meshes = [];
 
-        // Géométries et matériau créés une seule fois, réutilisés lors des regenerate
         this._geos = [
             this._makeGeo(0, 1), this._makeGeo(1, 1),
             this._makeGeo(0, 0), this._makeGeo(1, 0),
         ];
         this._material = new THREE.MeshStandardMaterial({
-            map:       textureLoader.load('assets/grass/GrassColor.png'),
+            map: textureLoader.load('assets/grass/GrassColor.png'),
             normalMap: textureLoader.load('assets/grass/GrassNormal.png'),
             alphaTest: 0.5,
-            side:      THREE.DoubleSide,
+            side: THREE.DoubleSide,
         });
 
         this._place({ count: CONFIG.grassCount, scaleMin: 0.5, scaleMax: 3.5 });
@@ -44,10 +43,10 @@ export class GrassSystem {
             return m;
         });
 
-        const dummy    = new THREE.Object3D();
-        const _pos     = new THREE.Vector3();
-        const _normal  = new THREE.Vector3();
-        const _quat    = new THREE.Quaternion();
+        const dummy = new THREE.Object3D();
+        const _pos = new THREE.Vector3();
+        const _normal = new THREE.Vector3();
+        const _quat = new THREE.Quaternion();
         const _upWorld = new THREE.Vector3(0, 1, 0);
         const counters = [0, 0, 0, 0];
 
@@ -72,7 +71,7 @@ export class GrassSystem {
     }
 
     updateSampler(sampler, terrainMesh) {
-        this._sampler     = sampler;
+        this._sampler = sampler;
         this._terrainMesh = terrainMesh;
     }
 

@@ -1,22 +1,22 @@
-import { SceneSetup }      from './src/core/SceneSetup.js';
-import { PostProcessing }   from './src/core/PostProcessing.js';
+import { SceneSetup } from './src/core/SceneSetup.js';
+import { PostProcessing } from './src/core/PostProcessing.js';
 import { setupEnvironment } from './src/core/Environment.js';
-import { PerfOverlay }      from './src/core/PerfOverlay.js';
-import { DebugPanel }       from './src/debug/DebugPanel.js';
-import { Terrain }          from './src/terrain/Terrain.js';
-import { TreeSystem }       from './src/vegetation/Trees.js';
-import { GrassSystem }      from './src/vegetation/Grass.js';
-import { BushSystem }       from './src/vegetation/Bushes.js';
-import { FlowerSystem }     from './src/vegetation/Flowers.js';
-import { WaterMesh }        from './src/water/Water.js';
-import { LeafSystem }       from './src/particles/Leaves.js';
-import { Soldier }          from './src/player/Soldier.js';
-import { VirtualJoystick }  from './src/input/VirtualJoystick.js';
+import { PerfOverlay } from './src/core/PerfOverlay.js';
+import { DebugPanel } from './src/debug/DebugPanel.js';
+import { Terrain } from './src/terrain/Terrain.js';
+import { TreeSystem } from './src/vegetation/Trees.js';
+import { GrassSystem } from './src/vegetation/Grass.js';
+import { BushSystem } from './src/vegetation/Bushes.js';
+import { FlowerSystem } from './src/vegetation/Flowers.js';
+import { WaterMesh } from './src/water/Water.js';
+import { LeafSystem } from './src/particles/Leaves.js';
+import { Soldier } from './src/player/Soldier.js';
+import { VirtualJoystick } from './src/input/VirtualJoystick.js';
 
 // ─── Setup ───────────────────────────────────────────────────────────────────
 const { scene, camera, renderer, clock, stats } = new SceneSetup();
 const postProcessing = new PostProcessing(renderer, scene, camera);
-const perfOverlay    = new PerfOverlay(stats, renderer);
+const perfOverlay = new PerfOverlay(stats, renderer);
 
 const { sunLight } = setupEnvironment(scene);
 camera.position.set(15, 10, 15);
@@ -24,12 +24,12 @@ camera.position.set(15, 10, 15);
 // ─── Scène ───────────────────────────────────────────────────────────────────
 const terrain = new Terrain(scene);
 
-const trees   = new TreeSystem(scene, terrain.sampler, terrain.mesh);
-const grass   = new GrassSystem(scene,  terrain.sampler, terrain.mesh);
-const bushes  = new BushSystem(scene,   terrain.sampler, terrain.mesh);
+const trees = new TreeSystem(scene, terrain.sampler, terrain.mesh);
+const grass = new GrassSystem(scene, terrain.sampler, terrain.mesh);
+const bushes = new BushSystem(scene, terrain.sampler, terrain.mesh);
 const flowers = new FlowerSystem(scene, terrain.sampler, terrain.mesh);
-const water   = new WaterMesh(scene);
-const leaves  = new LeafSystem(scene);
+const water = new WaterMesh(scene);
+const leaves = new LeafSystem(scene);
 const soldier = new Soldier(scene, camera);
 
 // ─── Debug panel (uniquement avec ?debug=1) ───────────────────────────────────
@@ -42,20 +42,18 @@ async function init() {
         soldier.load('assets/soldier.glb'),
     ]);
 
-    // Tous les objets sont dans la scène : on compile tous les shaders d'un coup.
-    // Élimine les pics de 30ms dus à la compilation GLSL JIT sur les premières frames.
+
     renderer.compile(scene, camera);
 
     // Joystick tactile
     const joystick = new VirtualJoystick();
     soldier.joystick = joystick;
 
-    // Slider pixel ratio dans le popup
-    const slider  = document.getElementById('pixel-ratio-slider');
+    const slider = document.getElementById('pixel-ratio-slider');
     const display = document.getElementById('pixel-ratio-display');
     if (slider && display) {
         const initial = Math.min(window.devicePixelRatio, 2);
-        slider.max   = String(Math.max(window.devicePixelRatio, 2));
+        slider.max = String(Math.max(window.devicePixelRatio, 2));
         slider.value = String(initial);
         display.textContent = `${initial.toFixed(2)}×`;
         slider.addEventListener('input', () => {
@@ -82,13 +80,13 @@ let _accumJS = 0, _accumRender = 0, _accumFrame = 0, _diagFrames = 0;
 let frameCount = 0;
 
 function animate() {
-    const rafNow  = performance.now();
+    const rafNow = performance.now();
     const frameDt = rafNow - _lastRafTime;
-    _lastRafTime  = rafNow;
+    _lastRafTime = rafNow;
 
     stats.begin();
     const delta = clock.getDelta();
-    const time  = performance.now() / 1000;
+    const time = performance.now() / 1000;
     frameCount++;
 
     const t0 = performance.now();
@@ -105,16 +103,16 @@ function animate() {
     perfOverlay.update();
     stats.end();
 
-    _accumJS     += jsMs;
+    _accumJS += jsMs;
     _accumRender += renderMs;
-    _accumFrame  += frameDt;
+    _accumFrame += frameDt;
     _diagFrames++;
 
     if (_diagFrames === 60) {
-        const avgJs     = (_accumJS     / 60).toFixed(2);
+        const avgJs = (_accumJS / 60).toFixed(2);
         const avgRender = (_accumRender / 60).toFixed(2);
-        const avgFrame  = (_accumFrame  / 60).toFixed(2);
-        const avgGPU    = Math.max(0, parseFloat(avgFrame) - parseFloat(avgJs) - parseFloat(avgRender)).toFixed(2);
+        const avgFrame = (_accumFrame / 60).toFixed(2);
+        const avgGPU = Math.max(0, parseFloat(avgFrame) - parseFloat(avgJs) - parseFloat(avgRender)).toFixed(2);
         console.log(
             `[PERF] Frame: ${avgFrame}ms` +
             ` | JS: ${avgJs}ms` +

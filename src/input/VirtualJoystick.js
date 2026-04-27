@@ -1,12 +1,12 @@
 export class VirtualJoystick {
     constructor() {
-        this.dx     = 0;
-        this.dy     = 0;
+        this.dx = 0;
+        this.dy = 0;
         this.active = false;
 
-        this._touchId   = null;
-        this._originX   = 0;
-        this._originY   = 0;
+        this._touchId = null;
+        this._originX = 0;
+        this._originY = 0;
         this._maxRadius = 45;
 
         this._createDOM();
@@ -30,7 +30,6 @@ export class VirtualJoystick {
 
     _bindEvents() {
         this._zone.addEventListener('touchstart', e => {
-            // Ne pas activer si un menu est visible
             if (document.querySelector('#controls-popup:not([style*="none"]):not(.hidden)')) return;
             if (this._touchId !== null) return;
             e.preventDefault();
@@ -40,8 +39,8 @@ export class VirtualJoystick {
             this._originX = t.clientX;
             this._originY = t.clientY;
 
-            this._base.style.left    = `${t.clientX}px`;
-            this._base.style.top     = `${t.clientY}px`;
+            this._base.style.left = `${t.clientX}px`;
+            this._base.style.top = `${t.clientY}px`;
             this._base.style.opacity = '1';
             this._knob.style.transform = 'translate(-50%, -50%)';
             this.active = true;
@@ -51,12 +50,12 @@ export class VirtualJoystick {
             if (this._touchId === null) return;
             for (const t of e.changedTouches) {
                 if (t.identifier !== this._touchId) continue;
-                const dx  = t.clientX - this._originX;
-                const dy  = t.clientY - this._originY;
+                const dx = t.clientX - this._originX;
+                const dy = t.clientY - this._originY;
                 const len = Math.hypot(dx, dy) || 1;
-                const c   = Math.min(len, this._maxRadius);
-                const kx  = (dx / len) * c;
-                const ky  = (dy / len) * c;
+                const c = Math.min(len, this._maxRadius);
+                const kx = (dx / len) * c;
+                const ky = (dy / len) * c;
 
                 this._knob.style.transform = `translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px))`;
                 this.dx = kx / this._maxRadius;
@@ -68,10 +67,10 @@ export class VirtualJoystick {
             for (const t of e.changedTouches) {
                 if (t.identifier !== this._touchId) continue;
                 this._touchId = null;
-                this._base.style.opacity  = '0';
+                this._base.style.opacity = '0';
                 this._knob.style.transform = 'translate(-50%, -50%)';
-                this.dx     = 0;
-                this.dy     = 0;
+                this.dx = 0;
+                this.dy = 0;
                 this.active = false;
             }
         }, { passive: true });

@@ -27,9 +27,9 @@ function createFlowerMaterial(alphaTex, flowerColor, threshold, mode) {
     });
     material.onBeforeCompile = (shader) => {
         shader.uniforms.uFlowerColor = { value: flowerColor };
-        shader.uniforms.uStemColor   = { value: new THREE.Color('#2e4a1e') };
-        shader.uniforms.uThreshold   = { value: threshold };
-        shader.uniforms.uMode        = { value: mode };
+        shader.uniforms.uStemColor = { value: new THREE.Color('#2e4a1e') };
+        shader.uniforms.uThreshold = { value: threshold };
+        shader.uniforms.uMode = { value: mode };
 
         shader.vertexShader = `varying vec2 vUv;\n` + shader.vertexShader;
         shader.vertexShader = shader.vertexShader.replace(
@@ -58,10 +58,10 @@ function createFlowerMaterial(alphaTex, flowerColor, threshold, mode) {
 
 export class FlowerSystem {
     constructor(scene, sampler, terrainMesh) {
-        this._scene       = scene;
-        this._sampler     = sampler;
+        this._scene = scene;
+        this._sampler = sampler;
         this._terrainMesh = terrainMesh;
-        this._meshes      = [];
+        this._meshes = [];
 
         const basePlane = new THREE.PlaneGeometry(1, 1);
         basePlane.translate(0, 0.5, 0);
@@ -70,7 +70,6 @@ export class FlowerSystem {
             basePlane.clone().rotateY(Math.PI / 2),
         ]);
 
-        // Matériaux créés une fois (compilation shader = coûteux)
         this._materials = [1, 2, 3, 4, 5].map((n, i) => createFlowerMaterial(
             textureLoader.load(`assets/flower/FlowerAlpha${n}.png`),
             FLOWER_COLORS[i], FLOWER_CONFIGS[i].threshold, FLOWER_CONFIGS[i].mode
@@ -80,8 +79,8 @@ export class FlowerSystem {
     }
 
     _place({ countPerType, scaleMin, scaleMax }) {
-        const dummy   = new THREE.Object3D();
-        const _pos    = new THREE.Vector3();
+        const dummy = new THREE.Object3D();
+        const _pos = new THREE.Vector3();
         const _normal = new THREE.Vector3();
 
         this._meshes = this._materials.map((mat) => {
@@ -107,7 +106,7 @@ export class FlowerSystem {
     }
 
     updateSampler(sampler, terrainMesh) {
-        this._sampler     = sampler;
+        this._sampler = sampler;
         this._terrainMesh = terrainMesh;
     }
 
