@@ -11,6 +11,7 @@ import { FlowerSystem }     from './src/vegetation/Flowers.js';
 import { WaterMesh }        from './src/water/Water.js';
 import { LeafSystem }       from './src/particles/Leaves.js';
 import { Soldier }          from './src/player/Soldier.js';
+import { VirtualJoystick }  from './src/input/VirtualJoystick.js';
 
 // ─── Setup ───────────────────────────────────────────────────────────────────
 const { scene, camera, renderer, clock, stats } = new SceneSetup();
@@ -44,6 +45,25 @@ async function init() {
     // Tous les objets sont dans la scène : on compile tous les shaders d'un coup.
     // Élimine les pics de 30ms dus à la compilation GLSL JIT sur les premières frames.
     renderer.compile(scene, camera);
+
+    // Joystick tactile
+    const joystick = new VirtualJoystick();
+    soldier.joystick = joystick;
+
+    // Slider pixel ratio dans le popup
+    const slider  = document.getElementById('pixel-ratio-slider');
+    const display = document.getElementById('pixel-ratio-display');
+    if (slider && display) {
+        const initial = Math.min(window.devicePixelRatio, 2);
+        slider.max   = String(Math.max(window.devicePixelRatio, 2));
+        slider.value = String(initial);
+        display.textContent = `${initial.toFixed(2)}×`;
+        slider.addEventListener('input', () => {
+            const v = parseFloat(slider.value);
+            display.textContent = `${v.toFixed(2)}×`;
+            postProcessing.setPixelRatio(v);
+        });
+    }
 
     hideLoader();
     animate();

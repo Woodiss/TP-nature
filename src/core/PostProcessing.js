@@ -7,6 +7,7 @@ import { CONFIG } from '../config.js';
 
 export class PostProcessing {
     constructor(renderer, scene, camera) {
+        this._renderer = renderer;
         const pixelRatio = Math.min(window.devicePixelRatio, CONFIG.maxPixelRatio);
         renderer.setPixelRatio(pixelRatio);
 
@@ -40,6 +41,12 @@ export class PostProcessing {
             renderer.setSize(w, h);
             this.composer.setSize(w, h);
         });
+    }
+
+    setPixelRatio(v) {
+        this._renderer.setPixelRatio(v);
+        this.composer.setPixelRatio(v);
+        this.composer.setSize(window.innerWidth, window.innerHeight);
     }
 
     render() {

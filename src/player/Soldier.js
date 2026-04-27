@@ -4,14 +4,15 @@ import { noise2D } from '../utils/random.js';
 
 export class Soldier {
     constructor(scene, camera) {
-        this.scene = scene;
-        this.camera = camera;
+        this.scene   = scene;
+        this.camera  = camera;
+        this.joystick = null; // injecté depuis main.js après création
 
-        this.model = null;
-        this.mixer = null;
-        this.animations = [];
+        this.model           = null;
+        this.mixer           = null;
+        this.animations      = [];
         this.currentAnimName = '';
-        this.currentAction = null;
+        this.currentAction   = null;
 
         this.keys = { w: false, a: false, s: false, d: false, shift: false };
         this._initListeners();
@@ -51,7 +52,7 @@ export class Soldier {
                 this.camera.lookAt(new THREE.Vector3(0, 5, 5));
                 this.playerGroup.add(this.camera);
 
-                this.mixer = new THREE.AnimationMixer(this.model);
+                this.mixer     = new THREE.AnimationMixer(this.model);
                 this.animations = gltf.animations;
                 this.playAnimation('Idle');
                 resolve();
@@ -66,35 +67,44 @@ export class Soldier {
             const action = this.mixer.clipAction(clip);
             if (this.currentAction) this.currentAction.fadeOut(0.2);
             action.reset().fadeIn(0.2).play();
-            this.currentAction = action;
+            this.currentAction   = action;
             this.currentAnimName = name;
         }
     }
 
     update(delta) {
         if (!this.model) return;
-
         this.mixer.update(delta);
 
         const walkSpeed = 10 * delta;
         const runSpeed  = 25 * delta;
-        const rotSpeed  = 3  * delta;
-        const moveSpeed = this.keys.shift ? runSpeed : walkSpeed;
+        const rotSpeed  =  3 * delta;
+
+        // Joystick touch input
+        const jx = this.joystick ? this.joystick.dx : 0;
+        const jy = this.joystick ? this.joystick.dy : 0;
+
+        const goFwd   = this.keys.w || jy < -0.2;
+        const goBack  = this.keys.s || jy >  0.2;
+        const goLeft  = this.keys.a || jx < -0.2;
+        const goRight = this.keys.d || jx >  0.2;
+        const sprint  = this.keys.shift || (this.joystick?.active && Math.hypot(jx, jy) > 0.7);
+
+        const moveSpeed = sprint ? runSpeed : walkSpeed;
         let isMoving = false;
 
-        if (this.keys.a) this.playerGroup.rotation.y += rotSpeed;
-        if (this.keys.d) this.playerGroup.rotation.y -= rotSpeed;
-        if (this.keys.s) { this.playerGroup.translateZ( moveSpeed); isMoving = true; }
-        if (this.keys.w) { this.playerGroup.translateZ(-moveSpeed); isMoving = true; }
+        if (goLeft)  this.playerGroup.rotation.y += rotSpeed;
+        if (goRight) this.playerGroup.rotation.y -= rotSpeed;
+        if (goBack)  { this.playerGroup.translateZ( moveSpeed); isMoving = true; }
+        if (goFwd)   { this.playerGroup.translateZ(-moveSpeed); isMoving = true; }
 
         if (isMoving) {
-            this.playAnimation(this.keys.shift ? 'Run' : 'Walk');
+            this.playAnimation(sprint ? 'Run' : 'Walk');
         } else {
             this.playAnimation('Idle');
         }
 
         // O(1) — formule directe depuis la géométrie du terrain (PlaneGeometry rotée -PI/2 sur X)
-        // world_height = noise2D(wx * 0.02, -wz * 0.02) * 5
         const wx = this.playerGroup.position.x;
         const wz = this.playerGroup.position.z;
         let groundY = noise2D(wx * 0.02, -wz * 0.02) * 5;

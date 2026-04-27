@@ -37,6 +37,10 @@
 
     <div id="ThreeJS" style="position: absolute; left:0px; top:0px"></div>
 
+    <button id="settings-btn" aria-label="Paramètres">
+        <img src="assets/setting.png" alt="">
+    </button>
+
     <div id="controls-popup">
         <button id="close-btn" aria-label="Fermer">&times;</button>
         <h2>Commandes</h2>
@@ -60,6 +64,13 @@
             <span class="control-label">Courir</span>
             <span class="key-box">Shift</span>
         </div>
+        <hr class="popup-divider">
+        <div class="control-row">
+            <span class="control-label">Qualité rendu</span>
+            <span class="key-box" id="pixel-ratio-display">1.0×</span>
+        </div>
+        <input type="range" id="pixel-ratio-slider" min="0.5" max="3" step="0.25">
+
         <div class="start-hint">Appuyez sur la croix pour commencer l'aventure</div>
     </div>
 
@@ -70,6 +81,12 @@
             const popup = document.getElementById('controls-popup');
             popup.classList.add('hidden');
             setTimeout(() => { popup.style.display = 'none'; }, 400);
+        });
+
+        document.getElementById('settings-btn').addEventListener('click', () => {
+            const popup = document.getElementById('controls-popup');
+            popup.style.display = 'flex';
+            requestAnimationFrame(() => popup.classList.remove('hidden'));
         });
     </script>
 </body>
